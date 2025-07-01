@@ -1326,7 +1326,7 @@ class KYCAdminQueries:
             return []
 
 
-if __name__ == "__main__":
-    # Test the storage system
-    storage = KYCMinIOStorage()
-    print("✅ KYC MinIO Storage system initialized")
+# if __name__ == "__main__":
+#     # Test the storage system
+#     storage = KYCMinIOStorage()
+#     print("✅ KYC MinIO Storage system initialized")
