@@ -813,7 +813,7 @@ with tab1:
     st.markdown('<p class="sub-header">Identity Verification</p>', unsafe_allow_html=True)
 
     # User ID input
-    user_id = st.text_input("User ID", value="user@exampe.com", placeholder="Enter your user ID", help="Your unique identifier")
+    user_id = st.text_input("User ID", value="user@example.com", placeholder="Enter your user ID", help="Your unique identifier")
 
     # File uploaders
     col1, col2 = st.columns(2)
