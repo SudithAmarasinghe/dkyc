@@ -45,7 +45,6 @@ API_ENDPOINTS = {
 ADMIN_USERNAME = "NugenAdmin"
 ADMIN_PASSWORD = "Nugenesisou@123"
 
-
 # Function to get the full API URL
 def get_api_url(endpoint_key, param=None):
     base = API_BASE_URL.rstrip('/')
@@ -54,26 +53,23 @@ def get_api_url(endpoint_key, param=None):
         return f"{base}/{endpoint}{param}"
     return f"{base}/{endpoint}"
 
-
 def hash_password(password):
     """Simple password hashing for session management"""
     return hashlib.sha256(password.encode()).hexdigest()
-
 
 def check_admin_credentials(username, password):
     """Check admin credentials"""
     return username == ADMIN_USERNAME and password == ADMIN_PASSWORD
 
-
 def admin_login():
     """Admin login form"""
     st.markdown('<p class="sub-header">Admin Login</p>', unsafe_allow_html=True)
-
+    
     with st.form("admin_login"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         submit_button = st.form_submit_button("Login")
-
+        
         if submit_button:
             if check_admin_credentials(username, password):
                 st.session_state.admin_authenticated = True
@@ -83,7 +79,6 @@ def admin_login():
             else:
                 st.error("Invalid credentials")
 
-
 def admin_logout():
     """Admin logout"""
     if st.button("Logout"):
@@ -92,10 +87,8 @@ def admin_logout():
         st.success("Logged out successfully!")
         st.rerun()
 
-
-@st.cache_resource(ttl=300)  # Changed from st.cache_data to st.cache_resource
 def get_admin_storage():
-    """Get MinIO storage instance (cached)"""
+    """Get MinIO storage instance (no caching for network connections)"""
     if not ADMIN_AVAILABLE:
         return None, None
     try:
@@ -109,31 +102,30 @@ def get_admin_storage():
 1. Check MinIO server is running on objectstorageapi.nugenesisou.com
 2. Verify MinIO credentials are correct
 3. Test MinIO connection manually:
-   # from kyc_storage import KYCMinIOStorage
+   from kyc_storage import KYCMinIOStorage
    storage = KYCMinIOStorage()
         """)
         return None, None
 
-
 def display_verification_summary(verification):
     """Display a single verification in a nice format"""
     col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
-
+    
     with col1:
         st.write(f"**{verification.get('email', 'N/A')}**")
         st.write(f"ID: {verification.get('verification_id', 'N/A')[:8]}...")
-
+        
     with col2:
         status = verification.get('status', 'unknown')
         if status == 'pass':
             st.success(f"✅ {status.upper()}")
         else:
             st.error(f"❌ {status.upper()}")
-
+            
     with col3:
         confidence = verification.get('confidence_score', 0)
         st.write(f"**Confidence:** {confidence:.3f}")
-
+        
     with col4:
         timestamp = verification.get('timestamp', '')
         if timestamp:
@@ -143,7 +135,6 @@ def display_verification_summary(verification):
                 st.write(f"**Time:** {dt.strftime('%H:%M:%S')}")
             except:
                 st.write(f"**Time:** {timestamp[:19]}")
-
 
 def admin_panel():
     """Main admin panel interface"""
@@ -157,13 +148,13 @@ def admin_panel():
 3. Ensure all required packages are installed:
    pip install minio logging datetime
         """)
-
+        
         # Show current working directory for debugging
         import os
         st.info(f"**Current directory:** {os.getcwd()}")
         st.info(f"**Files in directory:** {os.listdir('.')}")
         return
-
+        
     # Admin header with logout
     col1, col2 = st.columns([3, 1])
     with col1:
@@ -171,7 +162,7 @@ def admin_panel():
         st.info(f"Logged in as: {st.session_state.get('admin_user', 'Unknown')}")
     with col2:
         admin_logout()
-
+    
     # Get storage instance
     storage, admin_queries = get_admin_storage()
     if not storage or not admin_queries:
@@ -184,58 +175,58 @@ def admin_panel():
         - MinIO bucket permissions
         """)
         return
-
+    
     # Admin tabs
     admin_tab1, admin_tab2, admin_tab3, admin_tab4 = st.tabs([
-        "📊 Dashboard",
-        "🔍 Search Records",
-        "📁 View by Email",
+        "📊 Dashboard", 
+        "🔍 Search Records", 
+        "📁 View by Email", 
         "📈 Statistics"
     ])
-
+    
     with admin_tab1:
         st.markdown("### Recent Verifications")
-
+        
         # Get today's date for recent verifications
         today = datetime.now().strftime("%Y-%m-%d")
         yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-
+        
         try:
             # Get daily summaries
             today_summary = admin_queries.get_daily_summary(today)
             yesterday_summary = admin_queries.get_daily_summary(yesterday)
-
+            
             # Display metrics
             col1, col2, col3, col4 = st.columns(4)
-
+            
             with col1:
                 today_total = today_summary.get('total_verifications', 0) if today_summary else 0
                 st.metric("Today's Verifications", today_total)
-
+                
             with col2:
                 today_passed = today_summary.get('passed', 0) if today_summary else 0
                 st.metric("Today's Passed", today_passed)
-
+                
             with col3:
                 today_failed = today_summary.get('failed', 0) if today_summary else 0
                 st.metric("Today's Failed", today_failed)
-
+                
             with col4:
                 today_users = today_summary.get('unique_users_count', 0) if today_summary else 0
                 st.metric("Unique Users Today", today_users)
-
+            
             # Show recent verifications from current month
             current_month = datetime.now().strftime("%Y-%m")
             monthly_data = admin_queries.get_monthly_index(current_month)
-
+            
             if monthly_data and 'verifications' in monthly_data:
                 # Get last 10 verifications
                 recent_verifications = sorted(
-                    monthly_data['verifications'],
-                    key=lambda x: x.get('timestamp', ''),
+                    monthly_data['verifications'], 
+                    key=lambda x: x.get('timestamp', ''), 
                     reverse=True
                 )[:10]
-
+                
                 st.markdown("### Last 10 Verifications")
                 for verification in recent_verifications:
                     with st.container():
@@ -243,49 +234,49 @@ def admin_panel():
                         st.divider()
             else:
                 st.info("No verification data found for this month")
-
+                
         except Exception as e:
             st.error(f"Error loading dashboard data: {e}")
-
+    
     with admin_tab2:
         st.markdown("### Search Verification Records")
-
+        
         # Search form
         with st.form("search_form"):
             col1, col2 = st.columns(2)
-
+            
             with col1:
                 start_date = st.date_input(
-                    "Start Date",
+                    "Start Date", 
                     value=datetime.now() - timedelta(days=30),
                     max_value=datetime.now()
                 )
                 status_filter = st.selectbox(
-                    "Status Filter",
+                    "Status Filter", 
                     ["All", "pass", "fail"]
                 )
-
+                
             with col2:
                 end_date = st.date_input(
-                    "End Date",
+                    "End Date", 
                     value=datetime.now(),
                     max_value=datetime.now()
                 )
                 email_filter = st.text_input("Email Filter (optional)")
-
+            
             search_button = st.form_submit_button("Search")
-
+            
         if search_button:
             try:
                 with st.spinner("Searching verification records..."):
                     # Convert dates to strings
                     start_str = start_date.strftime("%Y-%m-%d")
                     end_str = end_date.strftime("%Y-%m-%d")
-
+                    
                     # Apply filters
                     status_param = None if status_filter == "All" else status_filter
                     email_param = email_filter if email_filter.strip() else None
-
+                    
                     # Search
                     results = admin_queries.search_verifications(
                         start_date=start_str,
@@ -293,22 +284,21 @@ def admin_panel():
                         status=status_param,
                         email_filter=email_param
                     )
-
+                    
                     if results:
                         st.success(f"Found {len(results)} verification(s)")
-
+                        
                         # Display results
                         for i, result in enumerate(results):
-                            with st.expander(
-                                    f"Verification {i + 1}: {result.get('email', 'N/A')} - {result.get('status', 'unknown').upper()}"):
+                            with st.expander(f"Verification {i+1}: {result.get('email', 'N/A')} - {result.get('status', 'unknown').upper()}"):
                                 col1, col2 = st.columns(2)
-
+                                
                                 with col1:
                                     st.write(f"**Verification ID:** {result.get('verification_id', 'N/A')}")
                                     st.write(f"**Email:** {result.get('email', 'N/A')}")
                                     st.write(f"**Status:** {result.get('status', 'N/A')}")
                                     st.write(f"**Confidence:** {result.get('confidence_score', 0):.3f}")
-
+                                    
                                 with col2:
                                     timestamp = result.get('timestamp', '')
                                     if timestamp:
@@ -317,49 +307,45 @@ def admin_panel():
                                             st.write(f"**Date:** {dt.strftime('%Y-%m-%d %H:%M:%S')}")
                                         except:
                                             st.write(f"**Timestamp:** {timestamp}")
-
+                                    
                                     st.write(f"**ID Name:** {result.get('id_name', 'N/A')}")
-
-                                # Get full verification details
-                                if st.button(f"View Full Details", key=f"details_{i}"):
-                                    full_details = admin_queries.get_verification_by_id(result.get('verification_id'))
-                                    if full_details:
-                                        st.json(full_details)
                     else:
                         st.info("No verification records found for the specified criteria")
-
+                        
             except Exception as e:
                 st.error(f"Error searching records: {e}")
-
+    
     with admin_tab3:
         st.markdown("### View Verifications by Email")
-
+        
         email_input = st.text_input("Enter email address")
         limit_input = st.number_input("Number of records to show", min_value=1, max_value=100, value=10)
-
+        
         if st.button("Get Verifications") and email_input:
             try:
                 with st.spinner(f"Loading verifications for {email_input}..."):
                     verifications = admin_queries.get_verifications_by_email(email_input, limit_input)
-
+                    
                     if verifications:
                         st.success(f"Found {len(verifications)} verification(s) for {email_input}")
-
+                        
                         for i, verification in enumerate(verifications):
-                            with st.expander(f"Verification {i + 1} - {verification.get('status', 'unknown').upper()}"):
+                            verification_id = verification.get('verification_id', 'N/A')
+                            
+                            with st.expander(f"Verification {i+1} - {verification.get('status', 'unknown').upper()}"):
                                 # Display verification details
                                 col1, col2 = st.columns(2)
-
+                                
                                 with col1:
-                                    st.write(f"**Verification ID:** {verification.get('verification_id', 'N/A')}")
+                                    st.write(f"**Verification ID:** {verification_id}")
                                     st.write(f"**Status:** {verification.get('status', 'N/A')}")
                                     st.write(f"**Confidence Score:** {verification.get('confidence_score', 0):.3f}")
-
+                                    
                                     # Error message if failed
                                     error_msg = verification.get('error_message')
                                     if error_msg:
                                         st.error(f"**Error:** {error_msg}")
-
+                                
                                 with col2:
                                     timestamp = verification.get('timestamp', '')
                                     if timestamp:
@@ -368,7 +354,7 @@ def admin_panel():
                                             st.write(f"**Date:** {dt.strftime('%Y-%m-%d %H:%M:%S')}")
                                         except:
                                             st.write(f"**Timestamp:** {timestamp}")
-
+                                
                                 # ID Details
                                 id_details = verification.get('id_details', {})
                                 if id_details:
@@ -382,48 +368,118 @@ def admin_panel():
                                         {"Field": "Address", "Value": id_details.get('address', 'N/A')},
                                     ])
                                     st.dataframe(id_df, use_container_width=True)
-
-                                # File information
-                                files = verification.get('files', {})
-                                if files:
-                                    st.markdown("**Files:**")
-                                    st.write(f"- ID Card: {files.get('id_card', 'N/A')}")
-                                    st.write(f"- Selfie Video: {files.get('selfie_video', 'N/A')}")
+                                
+                                # Always load and display files directly
+                                st.markdown("---")
+                                st.markdown("### 📁 Verification Files")
+                                
+                                try:
+                                    # Get full verification details with download URLs
+                                    full_verification = admin_queries.get_verification_by_id(verification_id)
+                                    
+                                    if full_verification and 'download_urls' in full_verification:
+                                        download_urls = full_verification['download_urls']
+                                        
+                                        # Create two columns for side-by-side display
+                                        file_col1, file_col2 = st.columns(2)
+                                        
+                                        # Display ID Card Image
+                                        with file_col1:
+                                            st.markdown("**📷 ID Card Image:**")
+                                            if 'id_card' in download_urls:
+                                                try:
+                                                    st.image(download_urls['id_card'], caption="ID Card Image", use_column_width=True)
+                                                except Exception as img_error:
+                                                    st.error(f"Could not load ID card image")
+                                                    st.caption(f"Error: {str(img_error)[:100]}...")
+                                                    # Show file path for debugging
+                                                    files = verification.get('files', {})
+                                                    if files.get('id_card'):
+                                                        st.caption(f"File: {files['id_card']}")
+                                            else:
+                                                st.warning("ID card image not available")
+                                        
+                                        # Display Selfie Video
+                                        with file_col2:
+                                            st.markdown("**🎥 Selfie Video:**")
+                                            if 'selfie_video' in download_urls:
+                                                try:
+                                                    st.video(download_urls['selfie_video'])
+                                                except Exception as vid_error:
+                                                    st.error(f"Could not load selfie video")
+                                                    st.caption(f"Error: {str(vid_error)[:100]}...")
+                                                    # Show file path for debugging
+                                                    files = verification.get('files', {})
+                                                    if files.get('selfie_video'):
+                                                        st.caption(f"File: {files['selfie_video']}")
+                                            else:
+                                                st.warning("Selfie video not available")
+                                        
+                                        # Show metadata download link
+                                        if 'metadata' in download_urls:
+                                            st.markdown("**📄 Additional Info:**")
+                                            col_meta1, col_meta2 = st.columns(2)
+                                            with col_meta1:
+                                                st.link_button("📥 Download Metadata", download_urls['metadata'], help="Download full verification details as JSON")
+                                            with col_meta2:
+                                                files = verification.get('files', {})
+                                                st.caption(f"Files stored in MinIO bucket")
+                                                
+                                    else:
+                                        st.error("Could not retrieve file download URLs")
+                                        st.info("💡 **Possible reasons:**")
+                                        st.write("• MinIO server connection issues")
+                                        st.write("• File access permissions")
+                                        st.write("• Files may have been moved or deleted")
+                                        
+                                        # Show file paths for debugging
+                                        files = verification.get('files', {})
+                                        if files:
+                                            st.caption("**Expected file locations:**")
+                                            st.caption(f"• ID Card: {files.get('id_card', 'N/A')}")
+                                            st.caption(f"• Video: {files.get('selfie_video', 'N/A')}")
+                                        
+                                except Exception as e:
+                                    st.error(f"Error loading verification files: {str(e)}")
+                                    st.info("💡 **Troubleshooting:**")
+                                    st.write("• Check MinIO server connection")
+                                    st.write("• Verify bucket permissions")
+                                    st.write("• Files may need time to be available")
                     else:
                         st.info(f"No verifications found for {email_input}")
-
+                        
             except Exception as e:
                 st.error(f"Error loading verifications: {e}")
-
+    
     with admin_tab4:
         st.markdown("### Statistics & Analytics")
-
+        
         # Date range for statistics
         col1, col2 = st.columns(2)
         with col1:
             stats_start_date = st.date_input(
-                "Statistics Start Date",
+                "Statistics Start Date", 
                 value=datetime.now() - timedelta(days=7),
                 key="stats_start"
             )
         with col2:
             stats_end_date = st.date_input(
-                "Statistics End Date",
+                "Statistics End Date", 
                 value=datetime.now(),
                 key="stats_end"
             )
-
+        
         if st.button("Generate Statistics"):
             try:
                 with st.spinner("Generating statistics..."):
                     # Generate date range
                     current_date = stats_start_date
                     daily_stats = []
-
+                    
                     while current_date <= stats_end_date:
                         date_str = current_date.strftime("%Y-%m-%d")
                         daily_summary = admin_queries.get_daily_summary(date_str)
-
+                        
                         if daily_summary:
                             daily_stats.append({
                                 'Date': date_str,
@@ -440,18 +496,18 @@ def admin_panel():
                                 'Failed': 0,
                                 'Unique Users': 0
                             })
-
+                        
                         current_date += timedelta(days=1)
-
+                    
                     if daily_stats:
                         df = pd.DataFrame(daily_stats)
-
+                        
                         # Display summary metrics
                         total_verifications = df['Total'].sum()
                         total_passed = df['Passed'].sum()
                         total_failed = df['Failed'].sum()
                         total_unique_users = df['Unique Users'].sum()
-
+                        
                         col1, col2, col3, col4 = st.columns(4)
                         with col1:
                             st.metric("Total Verifications", total_verifications)
@@ -460,22 +516,21 @@ def admin_panel():
                         with col3:
                             st.metric("Total Failed", total_failed)
                         with col4:
-                            st.metric("Pass Rate", f"{(total_passed / max(total_verifications, 1) * 100):.1f}%")
-
+                            st.metric("Pass Rate", f"{(total_passed/max(total_verifications,1)*100):.1f}%")
+                        
                         # Display daily statistics table
                         st.markdown("### Daily Statistics")
                         st.dataframe(df, use_container_width=True)
-
+                        
                         # Simple charts
                         if len(df) > 1:
                             st.markdown("### Daily Verification Trends")
                             st.line_chart(df.set_index('Date')[['Total', 'Passed', 'Failed']])
                     else:
                         st.info("No statistics available for the selected date range")
-
+                        
             except Exception as e:
                 st.error(f"Error generating statistics: {e}")
-
 
 # Initialize session state
 if 'admin_authenticated' not in st.session_state:
@@ -527,7 +582,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
 def check_api_health():
     """Check if the API is running"""
     try:
@@ -547,7 +601,6 @@ def check_api_health():
             return False, error_msg
     except requests.RequestException as e:
         return False, f"Connection error: {str(e)}"
-
 
 def submit_verification(id_card_file, selfie_video_file, user_id):
     """Submit files for verification"""
@@ -596,7 +649,6 @@ def submit_verification(id_card_file, selfie_video_file, user_id):
     except Exception as e:
         return False, f"Unexpected error: {str(e)}"
 
-
 def check_verification_status(verification_id):
     """Check the status of a verification process"""
     try:
@@ -624,7 +676,6 @@ def check_verification_status(verification_id):
         return False, f"Connection error: {str(e)}"
     except Exception as e:
         return False, f"Unexpected error: {str(e)}"
-
 
 def display_verification_result(status_data):
     """Display verification results in a nice format"""
@@ -717,7 +768,6 @@ def display_verification_result(status_data):
     else:
         st.warning(f"Unknown status: {status}")
         return False
-
 
 # App layout
 st.markdown('<p class="main-header">Digital KYC Verification</p>', unsafe_allow_html=True)
@@ -891,13 +941,13 @@ with tab2:
 
 with tab3:
     st.markdown('<div class="border-box">', unsafe_allow_html=True)
-
+    
     # Check if admin is authenticated
     if not st.session_state.admin_authenticated:
         admin_login()
     else:
         admin_panel()
-
+    
     st.markdown('</div>', unsafe_allow_html=True)
 
 # Add instructions in the sidebar
